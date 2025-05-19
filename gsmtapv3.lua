@@ -1,4 +1,4 @@
--- GSMTAP v3 Dissector for Wireshark
+-- GSMTAP v3 Dissector for Wireshark - Improved Version
 -- Based on the official GSMTAPv3 specification from Osmocom
 -- Place this file in your Wireshark plugins directory as gsmtapv3.lua
 
@@ -267,6 +267,84 @@ local function parse_metadata(buffer, pinfo, tree, offset, metadata_len)
     end
 end
 
+-- Enhanced function to set up pinfo for NR-RRC dissection
+local function setup_nr_rrc_pinfo(pinfo, sub_type)
+    -- Set up the packet info for NR-RRC dissection
+    -- This helps the NR-RRC dissector understand the channel type
+    
+    local channel_mapping = {
+        [0x0001] = "bcch.bch",     -- BCCH-BCH
+        [0x0002] = "bcch.dl.sch",  -- BCCH-DL-SCH
+        [0x0003] = "dl.ccch",      -- DL-CCCH
+        [0x0004] = "dl.dcch",      -- DL-DCCH
+        [0x0005] = "mcch",         -- MCCH
+        [0x0006] = "pcch",         -- PCCH
+        [0x0007] = "ul.ccch",      -- UL-CCCH
+        [0x0008] = "ul.ccch1",     -- UL-CCCH1
+        [0x0009] = "ul.dcch"       -- UL-DCCH
+    }
+    
+    local channel = channel_mapping[sub_type]
+    if channel then
+        pinfo.private["nr-rrc.channel_type"] = channel
+    end
+end
+
+-- Enhanced function to set up pinfo for LTE-RRC dissection
+local function setup_lte_rrc_pinfo(pinfo, sub_type)
+    -- Set up the packet info for LTE-RRC dissection
+    local channel_mapping = {
+        [0x0001] = "bcch.bch",     -- BCCH-BCH
+        [0x0002] = "bcch.bch.mbms", -- BCCH-BCH-MBMS
+        [0x0003] = "bcch.dl.sch",  -- BCCH-DL-SCH
+        [0x0004] = "bcch.dl.sch.br", -- BCCH-DL-SCH-BR
+        [0x0005] = "bcch.dl.sch.mbms", -- BCCH-DL-SCH-MBMS
+        [0x0006] = "mcch",         -- MCCH
+        [0x0007] = "pcch",         -- PCCH
+        [0x0008] = "dl.ccch",      -- DL-CCCH
+        [0x0009] = "dl.dcch",      -- DL-DCCH
+        [0x000a] = "ul.ccch",      -- UL-CCCH
+        [0x000b] = "ul.dcch",      -- UL-DCCH
+        [0x000c] = "sc.mcch"       -- SC-MCCH
+    }
+    
+    local channel = channel_mapping[sub_type]
+    if channel then
+        pinfo.private["lte-rrc.channel_type"] = channel
+    end
+end
+
+-- Enhanced function to get the appropriate dissector and channel info
+local function get_dissector_info(msg_type, sub_type)
+    local dissector_table = {
+        -- GSM
+        [0x0200] = {name = "gsm_um", setup = nil},
+        [0x0201] = {name = "gsm_burst", setup = nil},
+        
+        -- UMTS
+        [0x0303] = {name = "rrc", setup = nil},
+        
+        -- LTE
+        [0x0400] = {name = "mac-lte", setup = nil},
+        [0x0401] = {name = "rlc-lte", setup = nil},
+        [0x0402] = {name = "pdcp-lte", setup = nil},
+        [0x0403] = {name = "lte-rrc", setup = setup_lte_rrc_pinfo},
+        [0x0404] = {name = "nas-eps", setup = nil},
+        
+        -- NR (5G)
+        [0x0500] = {name = "mac-nr", setup = nil},
+        [0x0501] = {name = "rlc-nr", setup = nil},
+        [0x0502] = {name = "pdcp-nr", setup = nil},
+        [0x0503] = {name = "nr-rrc", setup = setup_nr_rrc_pinfo},
+        [0x0504] = {name = "nas-5gs", setup = nil},
+        
+        -- SIM
+        [0x0001] = {name = "iso7816", setup = nil}
+    }
+    
+    return dissector_table[msg_type]
+end
+
 -- Main dissector function
 function gsmtapv3_proto.dissector(buffer, pinfo, tree)
     local length = buffer:len()
@@ -348,28 +426,100 @@ function gsmtapv3_proto.dissector(buffer, pinfo, tree)
         -- Try to dissect the payload based on type
         local payload_buffer = buffer(hdr_len_bytes, payload_len):tvb()
         
-        -- Call appropriate sub-dissector based on type
-        local dissector_name = nil
-        if msg_type == 0x0303 then      -- UMTS RRC
-            dissector_name = "rrc"
-        elseif msg_type == 0x0403 then  -- LTE RRC
-            dissector_name = "lte-rrc"
-        elseif msg_type == 0x0400 then  -- LTE MAC
-            dissector_name = "mac-lte"
-        elseif msg_type == 0x0404 then  -- EPS NAS
-            dissector_name = "nas-eps"
-        elseif msg_type == 0x0503 then  -- NR RRC
-            dissector_name = "nr-rrc"
-        elseif msg_type == 0x0504 then  -- 5GS NAS
-            dissector_name = "nas-5gs"
-        elseif msg_type == 0x0200 then  -- GSM UM
-            dissector_name = "gsm_um"
+        -- Get dissector information
+        local dissector_info = get_dissector_info(msg_type, sub_type)
+        
+        if dissector_info then
+            -- Setup pinfo for specific dissectors if needed
+            if dissector_info.setup then
+                dissector_info.setup(pinfo, sub_type)
+            end
+            
+            -- Try multiple dissector names/variations
+            local dissector_variants = {dissector_info.name}
+            
+            -- Add specific channel variants for NR-RRC
+            if msg_type == 0x0503 then  -- NR RRC
+                -- Map subtypes to specific dissector names
+                local nr_rrc_dissectors = {
+                    [0x0001] = {"nr-rrc.bcch.bch"},
+                    [0x0002] = {"nr-rrc.bcch.dl.sch"},
+                    [0x0003] = {"nr-rrc.dl.ccch"},
+                    [0x0004] = {"nr-rrc.dl.dcch"},
+                    [0x0005] = {"nr-rrc.mcch"},
+                    [0x0006] = {"nr-rrc.pcch"},
+                    [0x0007] = {"nr-rrc.ul.ccch"},
+                    [0x0008] = {"nr-rrc.ul.ccch1"},
+                    [0x0009] = {"nr-rrc.ul.dcch"}
+                }
+                
+                -- Add specific dissectors for this subtype
+                if nr_rrc_dissectors[sub_type] then
+                    for _, dissector_name in ipairs(nr_rrc_dissectors[sub_type]) do
+                        table.insert(dissector_variants, dissector_name)
+                    end
+                end
+                
+                -- Also add additional common NR-RRC dissectors that might be relevant
+                table.insert(dissector_variants, "nr-rrc.sbcch.sl.bch")
+                table.insert(dissector_variants, "nr-rrc.scch")
+                table.insert(dissector_variants, "nr-rrc.ueradiopaginginformation")
+                table.insert(dissector_variants, "nr-rrc.ueradioaccesscapabilityinformation")
+                table.insert(dissector_variants, "nr-rrc.rrc_reconf")
+                table.insert(dissector_variants, "nr-rrc.uemrdccapability")
+                table.insert(dissector_variants, "nr-rrc.uennrcapability")
+                table.insert(dissector_variants, "nr-rrc.radiobearerconfig")
+            end
+            
+            -- Add specific channel variants for LTE-RRC  
+            if msg_type == 0x0403 then  -- LTE RRC
+                local channel_suffixes = {
+                    [0x0001] = "bcch_bch",
+                    [0x0003] = "bcch_dl_sch",
+                    [0x0007] = "pcch",
+                    [0x0008] = "dl_ccch",
+                    [0x0009] = "dl_dcch",
+                    [0x000a] = "ul_ccch",
+                    [0x000b] = "ul_dcch"
+                }
+                
+                if channel_suffixes[sub_type] then
+                    table.insert(dissector_variants, "lte-rrc." .. channel_suffixes[sub_type])
+                end
+            end
+            
+            -- Try each dissector variant
+            local dissector_found = false
+            for _, dissector_name in ipairs(dissector_variants) do
+                local subdissector = Dissector.get(dissector_name)
+                if subdissector then
+                    local result = subdissector:call(payload_buffer, pinfo, tree)
+                    if result and result > 0 then
+                        dissector_found = true
+                        break
+                    end
+                end
+            end
+            
+            -- If no specific dissector worked, try a more generic approach
+            if not dissector_found then
+                -- For debugging: try to find available dissectors
+                local dissector_table = DissectorTable.get("wtap_encap")
+                if dissector_table then
+                    -- This is just for information - actual dissection might need different approach
+                end
+            end
         end
         
-        if dissector_name then
-            local subdissector = Dissector.get(dissector_name)
-            if subdissector then
-                subdissector:call(payload_buffer, pinfo, tree)
+        -- Special handling for specific payload types that may need custom dissection
+        if msg_type == 0x0503 and sub_type == 0x0006 then  -- NR RRC PCCH
+            -- For PCCH messages, we know the structure starts with the message choice
+            -- This could be enhanced to provide more detailed parsing if needed
+            local payload_tree = tree:add("NR-RRC PCCH Payload Analysis")
+            if payload_len > 0 then
+                local first_byte = buffer(hdr_len_bytes, 1):uint()
+                payload_tree:add_expert_info(PI_NOTE, PI_CHAT, 
+                    string.format("PCCH message starts with: 0x%02x", first_byte))
             end
         end
     end
@@ -394,11 +544,6 @@ gsmtapv3_proto:register_heuristic("udp", function(buffer, pinfo, tree)
     end
     
     return false
-end)
-
--- Register as a dissector that can be manually selected
-gsmtapv3_proto:register_heuristic("udp", function(buffer, pinfo, tree)
-    return false  -- Don't automatically activate
 end)
 
 -- Allow manual decode-as selection
