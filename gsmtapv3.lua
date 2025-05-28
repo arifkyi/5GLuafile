@@ -1,5 +1,7 @@
 -- GSMTAP v3 Dissector for Wireshark - Improved Version
 -- Based on the official GSMTAPv3 specification from Osmocom
+-- convert to LUA scrip by https://www.youtube.com/c/RifkyTheCyber
+-- support my channel in YT rifkythecyber by donate here: https://ko-fi.com/rifkythecyber
 -- Place this file in your Wireshark plugins directory as gsmtapv3.lua
 
 -- Protocol definition
