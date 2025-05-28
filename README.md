@@ -41,18 +41,8 @@ Once installed, the decoder will automatically parse NR 5GS messages in your pac
 2. Apply relevant display filters
 3. View decoded NR 5GS messages in the packet details pane
 
-## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📞 Support
-
-If you encounter any issues or have questions, please:
-- Check the video tutorial first
-- Open an issue in this repository
-- Provide detailed information about your setup and the problem
-
-## ☕ Support This Project
+## ☕ Support Me, Support Rifky The Cyber YouTube Channel
 
 If you find this tool helpful and would like to support its development, you can buy me a coffee!
 
