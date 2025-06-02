@@ -1,0 +1,20 @@
+doodles with Beta
+
+
+ahmadrifky@ahmads-mbp Desktop % /Applications/Wireshark.app/Contents/MacOS/text2pcap -u 4729,4729 corrected_tetra_test.txt corrected_tetra.pcap
+Input from: corrected_tetra_test.txt
+Output to: corrected_tetra.pcap
+Output format: pcapng
+Generate dummy Ethernet header: Protocol: 0x800
+Generate dummy IP header: Protocol: 17
+Generate dummy UDP header: Source port: 4729. Dest port: 4729
+
+-------------------------
+Read 7 potential packets, wrote 7 packets (1172 bytes including overhead).
+ahmadrifky@ahmads-mbp Desktop % sudo cp -p gsmtapv3.lua /Users/ahmadrifky/.local/lib/wireshark/plugins/gsmtapv3.lua
+Password:
+ahmadrifky@ahmads-mbp Desktop %
+ahmadrifky@ahmads-mbp Desktop %
+ahmadrifky@ahmads-mbp Desktop % sudo chmod 644 /Users/ahmadrifky/.local/lib/wireshark/plugins/gsmtapv3.lua
+ahmadrifky@ahmads-mbp Desktop % open -a Wireshark corrected_tetra.pcap
+ahmadrifky@ahmads-mbp Desktop %
