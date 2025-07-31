@@ -17,7 +17,7 @@ This LUA script enhances Wireshark's capabilities by providing full decoding sup
 
 For a comprehensive step-by-step installation tutorial, please watch our video guide:
 
-**[📹 Watch Installation Tutorial on YouTube](https://www.youtube.com/watch?v=InixSEUF_Rc)**
+**[📹 Watch Installation Tutorial on YouTube](https://www.youtube.com/watch?v=b0dbvIkkgCI)**
 
 ## 🛠️ Quick Setup
 
