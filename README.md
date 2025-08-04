@@ -41,6 +41,18 @@ Once installed, the decoder will automatically parse NR 5GS messages in your pac
 2. Apply relevant display filters
 3. View decoded NR 5GS messages in the packet details pane
 
+## 🔧 Troubleshooting
+
+### LTE/4G Traffic Not Decoding?
+
+If your PCAP contains LTE traffic that's not being decoded properly:
+
+1. Go to **Analyze** → **Decode As...**
+2. Find **UDP port 4729** in the list
+3. In the **"Current"** column, change from **GSMTAPv3** to **GSMTAP**
+4. Click **OK** to apply changes
+
+This allows you to switch between GSMTAPv3 (for 5G) and GSMTAP (for 4G/LTE) decoding as needed.
 
 ## ☕ Support Me, Support Rifky The Cyber YouTube Channel
 
@@ -54,7 +66,9 @@ Or scan the QR code below:
 
 ## 📄 License
 
-[Specify your license here - e.g., MIT, GPL, etc.]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Summary:** You can use, modify, and distribute this code freely, just keep the original copyright notice.
 
 ## 🙏 Acknowledgments
 
